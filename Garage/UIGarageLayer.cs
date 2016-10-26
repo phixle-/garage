@@ -15,12 +15,14 @@ namespace Garage
         string[] BikeNames = { "Honda 125hk", "Yamaha Wheelie", "Electric Bicycle" };
         string[] LawnmowerNames = { "Huswvarna Rider", "Stiga Tornado", "Traktor McCulloch" };
         string[] QuadNames = { "Loncin 90-B", "Cobra Automatic", "Loncin QuadSnake" };
-
-        Garage g = new Garage(8);
+        Garage g;
+        public Vehicle SelectedVehicle;
         Random rand = new Random();
 
-        public UIGarageLayer(bool load = false)
+        public UIGarageLayer(int size, bool load = false)
         {
+            g = new Garage(size);
+            SelectedVehicle = new Car(4, 4, "Yellow", 53000, "MiniCoopern", "Car");
             if (load && !File.Exists(Directory.GetCurrentDirectory() + @"\Save.txt"))
             {
                 Load("loading");
@@ -31,51 +33,96 @@ namespace Garage
             }
         }
 
-        public void Save(string tjoller)
+        public Vehicle[] GetParkingspots()
         {
-            Vehicle[] vehicles = g.ParkingSpots;
-            string lines = "";
-            foreach(Vehicle v in vehicles)
-            {
-                if (v != null)
-                    lines += v.type + "/" + v.Name + "!" + v.Color + "#" + v.Value + "|" + v.NrOfWheels + "\r\n";
-                else
-                    lines += "\r\n";
-            }
-
-            StreamWriter file = new StreamWriter(Directory.GetCurrentDirectory() + @"\Save.txt");
-            file.WriteLine(lines);
-
-            file.Close();
+            return g.ParkingSpots;
         }
 
-        public void Load(string tjoller)
+        public bool Save(string tjoller)
+        {
+            try
+            {
+                Vehicle[] vehicles = g.ParkingSpots;
+                string lines = "";
+                if (SelectedVehicle != null)
+                    lines = SelectedVehicle.type + "," + SelectedVehicle.Name + "," + SelectedVehicle.Color + "," + SelectedVehicle.Value + "," + SelectedVehicle.NrOfWheels + "\r\n";
+                else
+                    lines = "\r\n";
+                for (int i = 0; i < vehicles.Length; i += 1)
+                {
+                    Vehicle v = vehicles[i];
+
+                    if (v != null)
+                        lines += v.type + "," + v.Name + "," + v.Color + "," + v.Value + "," + v.NrOfWheels + "\r\n";
+                    else
+                        lines += "\r\n";
+                }
+                StreamWriter file = new StreamWriter(Directory.GetCurrentDirectory() + @"\Save.txt");
+                lines.TrimEnd();
+                file.WriteLine(lines);
+
+                file.Close();
+
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public bool Load(string tjoller)
         {
             if (File.Exists(Directory.GetCurrentDirectory() + @"\Save.txt"))
             {
                 StreamReader file = new StreamReader(Directory.GetCurrentDirectory() + @"\Save.txt");
-                Vehicle[] vehicles = new Vehicle[8];
+                List<Vehicle> vehicles = new List<Vehicle>();
                 int index = 0;
                 while(file.Peek() >= 0)
                 {
                     string line = file.ReadLine();
-                    string type = line.Split('/')[0];
-                    string name = line.Split('!')[0];
-                    string color = line.Split('#')[0];
-                    string value = line.Split('|')[0];
-                    string NoW = line;
+                    string[] splitted = line.Split(',');
+                    if (splitted.Length > 1)
+                    {
+                        string type = splitted[0];
+                        string name = splitted[1];
+                        string color = splitted[2];
+                        string value = splitted[3];
+                        string NoW = splitted[4];
 
-                    Vehicle v = new Vehicle(int.Parse(NoW), color, double.Parse(value), name, type);
-                    vehicles[index] = v;
+                        Vehicle v = new Vehicle(int.Parse(NoW), color, double.Parse(value), name, type);
+                        if (index == 0)
+                            SelectedVehicle = v;
+                        else
+                            vehicles.Add(v);
+                    }
+                    else
+                        if (index != 0)
+                            vehicles.Add(null);
+                    
                     index += 1;
                 }
-                g.ParkingSpots = vehicles;
+                Vehicle[] newArr = new Vehicle[vehicles.Count()-1];
+                for (int i = 0; i < vehicles.Count()-1; i += 1)
+                {
+                    newArr[i] = vehicles[i];
+                }
+                g.ParkingSpots = newArr;
+                file.Close();
+                return true;
             }
+            return false;
+            
+        }
+
+        public void Search()
+        {
+
         }
 
         public Vehicle GetVehicle(int index)
         {
-            return g.ParkingSpots[index - 1];
+            return g.ParkingSpots[index -1];
         }
 
         private void AddVehicles()

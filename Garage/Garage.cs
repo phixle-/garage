@@ -13,6 +13,8 @@ namespace Garage
 
         public Garage(int num)
         {
+            if (num % 2 != 0)
+                num -= 1;
             this.ParkingSpots = new Vehicle[num];
         }
 

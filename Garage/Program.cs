@@ -8,21 +8,22 @@ namespace Garage
 {
     class Program
     {
-        static UIGarageLayer layer = new UIGarageLayer(7);
+        static UIGarageLayer layer = new UIGarageLayer(8);
         static int index = 0;
         static int Indrag = 2;
         static string Msg = "";
+        static string searchQuery = "";
         static Dictionary<string, Action<string>> MainMenyDictionary = new Dictionary<string, Action<string>>();
+        static List<Vehicle> searchResult = new List<Vehicle>();
 
         static void Main(string[] args)
         {
+            
             Console.SetWindowSize(Console.WindowWidth, 40);
             AddToDictionary();
             while(true)
                 Menu("Main menu", MainMenyDictionary);
         }
-
-        
 
         static void AddToDictionary()
         {
@@ -60,17 +61,37 @@ namespace Garage
 
         static void ShowGarage(string name)
         {
+
             int pos = 1;
             int l = layer.GetParkingspots().Length;
             while(true)
             {
-                //Console.Clear();
-                Console.SetCursorPosition(0, 0);
                 
-                Console.WriteLine(name + "\nParked vehicles:");
+                Console.SetCursorPosition(0, 0);
+                Console.WriteLine(name);
+                Console.WriteLine("Parked vehicles:");
+                int left = Console.CursorLeft + l*4;
+                int top = Console.CursorTop;
+                if(left > Console.WindowWidth/2)
+                {
+                    left = 1;
+                }
+                
+                //ClearLine();
+                //Console.SetCursorPosition(0, top);
+                int tempL = Console.CursorLeft;
+                int tempT = Console.CursorTop;
                 ClearLine();
+                Console.SetCursorPosition(left, top);
+                Console.WriteLine("Search: " + searchQuery);
+                ShowSearchResult(searchQuery);
+                Console.WriteLine();
                 DrawLayout(pos);
                 VehicleInfo(pos);
+                //Console.SetCursorPosition(left, top);
+
+
+                
                 ConsoleKeyInfo keyInfo = Console.ReadKey();
                 if (keyInfo.Key == ConsoleKey.UpArrow || keyInfo.Key == ConsoleKey.DownArrow)
                 {
@@ -132,14 +153,101 @@ namespace Garage
                 }
                 else
                 {
-                    Search();
+                    Search(keyInfo);
+                    
                 }
+
+                
             }
         }
 
-        static void Search()
+        static void Search(ConsoleKeyInfo key)
         {
-            layer.Search();
+            if(key.Key == ConsoleKey.Backspace)
+            {
+                if(searchQuery.Length > 0)
+                {
+                    searchQuery = searchQuery.Substring(0, searchQuery.Length - 1);
+                }
+            }
+            else
+            {
+                searchQuery += key.KeyChar.ToString();
+            }
+        }
+
+        static void ShowSearchResult(string sq)
+        {
+            //Console.Clear();
+            int OriginalLeft = Console.CursorLeft;
+            int OriginalTop = Console.CursorTop;
+            int l = layer.GetParkingspots().Length;
+            int left = Console.CursorLeft + l * 4 + 2;
+            int top = 5;
+            if (left > Console.WindowWidth / 2)
+            {
+                left = 1;
+                top = 40;
+            }
+            searchResult.Clear();
+            if(sq.Length > 0)
+            {
+                IEnumerable<Vehicle> vQ = layer.GetParkedVehicles().Where(q => q.Name.StartsWith(sq)).Select(q => q).OrderBy(q => q.type);
+                
+                foreach (Vehicle v in vQ)
+                {
+                    if (!searchResult.Contains(v))
+                        searchResult.Add(v);
+                }
+                IEnumerable<Vehicle> vQ2 = layer.GetParkedVehicles().Where(q => q.Name.ToLower().Contains(sq.ToLower())).Select(q => q).OrderBy(q => q.type);
+                foreach (Vehicle v in vQ2)
+                {
+                    if (!searchResult.Contains(v))
+                        searchResult.Add(v);
+                }
+            }
+
+            for (int q = 0; q < 30; q++)
+            {
+                Console.SetCursorPosition(left, top+q);
+                Console.WriteLine("                                         ");
+            }
+
+            int limit = searchResult.Count();
+
+            if (limit > 4)
+                limit = 4;
+
+            for (int i = 0; i < limit; i+=1  )
+            {
+                if(searchResult[i] != null)
+                {
+                    
+                    Console.MoveBufferArea(0, 0, Console.WindowWidth, Console.WindowHeight, 0, 0);
+                    Vehicle v = searchResult[i];
+                    string spot = v.spot.ToString();
+                    if (spot == "0")
+                        spot = "In use";
+                    Console.SetCursorPosition(left, top);
+                    Console.WriteLine("Parkingspot: {0}", spot);
+                    Console.SetCursorPosition(left, top + 1);
+                    Console.WriteLine("Name of Vehicle: {0}", v.Name);
+                    Console.SetCursorPosition(left, top + 2);
+                    Console.WriteLine("Vehicle: {0}", v.type);
+                    Console.SetCursorPosition(left, top + 3);
+                    Console.WriteLine("Color: {0}", v.Color);
+                    Console.SetCursorPosition(left, top + 4);
+                    Console.WriteLine("Value: {0}", v.Value);
+                    Console.SetCursorPosition(left, top + 5);
+                    Console.WriteLine("Nr of wheels: {0}", v.NrOfWheels);
+                    Console.SetCursorPosition(left, top);
+
+                    if(top < Console.BufferHeight-8)
+                        top += 8;
+                }
+                
+            }
+            Console.SetCursorPosition(OriginalLeft, OriginalTop);
         }
 
         static void OldDrawLayout(int active)
@@ -200,7 +308,6 @@ namespace Garage
                 }
             }
             drawTopMidBottom();
-
         }
 
         static void drawTopMidBottom(bool mid = false)
@@ -229,276 +336,111 @@ namespace Garage
             int x = Console.CursorLeft;
             int y = Console.CursorTop;
 
-            for (int i = 0; i < 8; i+=1)
-                Console.WriteLine(new string(' ', Console.WindowWidth));
+            /*for (int i = 0; i < 16; i+=1)
+                Console.WriteLine(new string(' ', Console.WindowWidth));*/
 
                 Console.SetCursorPosition(x, y);
 
             if(layer.GetVehicle(index) != null)
             {
                 Vehicle v = layer.GetVehicle(index);
-                Console.WriteLine("Parkingspot: {0}\nVehicle: {1}\nName of Vehicle: {2}\nColor: {3}\nValue: {4}\nNr of wheels: {5}", index, v.type, v.Name, v.Color, v.Value, v.NrOfWheels);
+                Console.WriteLine("Parkingspot: {0}\nVehicle: {1}\nName of Vehicle: {2}\nColor: {3}\nValue: {4}\nNr of wheels: {5}", index + "          ", v.type + "          ", v.Name + "                 ", v.Color + "          ", v.Value + "          ", v.NrOfWheels + "          ");
             }
             else
             {
-                Console.WriteLine("Parkingspot: {0}\nVehicle: {1}\nName of Vehicle: {2}\nColor: {3}\nValue: {4}\nNr of wheels: {5}", index, "N/A", "N/A", "N/A", "N/A", "N/A");
+                Console.WriteLine("Parkingspot: {0}\nVehicle: {1}\nName of Vehicle: {2}\nColor: {3}\nValue: {4}\nNr of wheels: {5}", index + "          ", "N/A                 ", "N/A                 ", "N/A                 ", "N/A                 ", "N/A                 ");
             }
         }
 
         static void ParkLight(string alternativ, int index, int active)
         {
-            if (layer.GetVehicle(index) != null)
+            Console.ForegroundColor = ConsoleColor.Black;
+            Console.BackgroundColor = ConsoleColor.Gray;
+            if (active == index && alternativ == "0")
             {
-                string[,] figures = new string[,] { { " # # ", "  #  ", " # # " },
-                                                    { "  #  ", " |#| ", "  #  " },
-                                                    { "  #  ", "  |  ", "  #  " }, 
-                                                    { "     ", " ##  ", " ##  " } };
-
-                
-
-                //Console.BackgroundColor = (ConsoleColor)Enum.Parse(typeof(ConsoleColor), layer.GetVehicle(index).Color, true);
-                string type = layer.GetVehicle(index).type;
-                //type = "Car";
-                if (type == "Car")
-                {
-                    Console.ForegroundColor = ConsoleColor.Black;
-                    Console.BackgroundColor = ConsoleColor.Gray;
-                    ConsoleColor Color = (ConsoleColor)Enum.Parse(typeof(ConsoleColor), layer.GetVehicle(index).Color, true);
-                    if (active == index && alternativ == "0")
-                    {
-                        Console.Write("| ");
-                        Console.BackgroundColor = Color;
-                        Console.Write("   ");
-                        Console.BackgroundColor = ConsoleColor.Gray;
-                        Console.Write(" |");
-                    }
-                    else if (active != index && alternativ == "0")
-                    {
-                        Console.Write("  ");
-                        Console.BackgroundColor = Color;
-                        Console.Write("   ");
-                        Console.BackgroundColor = ConsoleColor.Gray;
-                        Console.Write("  ");
-                    }
-                    else if (active == index && alternativ != " ")
-                    {
-                        Console.Write("|{0,1}", alternativ);
-                        Console.BackgroundColor = Color;
-                        Console.Write("   ");
-                        Console.BackgroundColor = ConsoleColor.Gray;
-                        Console.Write(" |");
-                    }
-                    else if (active == index && alternativ == " ")
-                    {
-                        Console.Write(" {0,-5} ", "-----");
-                    }
-                    else if (active != index && alternativ == " ")
-                    {
-
-                        Console.Write(" {0,-5} ", "     ");
-                    }
-                    else
-                    {
-                        Console.Write("{0,2}", alternativ);
-                        Console.BackgroundColor = Color;
-                        Console.Write("   ");
-                        Console.BackgroundColor = ConsoleColor.Gray;
-                        Console.Write("  ");
-                    }
-                    Console.ResetColor();
-                }
-                else if (type == "Quad")
-                {
-                    Console.ForegroundColor = ConsoleColor.Black;
-                    Console.BackgroundColor = ConsoleColor.Gray;
-                    ConsoleColor Color = (ConsoleColor)Enum.Parse(typeof(ConsoleColor), layer.GetVehicle(index).Color, true);
-                    if (active == index && alternativ == "0")
-                    {
-                        Console.Write("|  ");
-                        Console.BackgroundColor = Color;
-                        Console.Write(" ");
-                        Console.BackgroundColor = ConsoleColor.Gray;
-                        Console.Write("  |");
-                    }
-                    else if (active != index && alternativ == "0")
-                    {
-                        Console.Write("   ");
-                        Console.BackgroundColor = Color;
-                        Console.Write(" ");
-                        Console.BackgroundColor = ConsoleColor.Gray;
-                        Console.Write("   ");
-                    }
-                    else if (active != index && alternativ == "-1")
-                    {
-                        Console.Write("  ");
-                        Console.BackgroundColor = Color;
-                        Console.Write(" ");
-                        Console.BackgroundColor = ConsoleColor.Gray;
-                        Console.Write(" ");
-                        Console.BackgroundColor = Color;
-                        Console.Write(" ");
-                        Console.BackgroundColor = ConsoleColor.Gray;
-                        Console.Write("  ");
-                    }
-                    else if (active == index && alternativ != " ")
-                    {
-                        Console.Write("|{0,1}", alternativ);
-                        Console.BackgroundColor = Color;
-                        Console.Write("   ");
-                        Console.BackgroundColor = ConsoleColor.Gray;
-                        Console.Write(" |");
-                    }
-                    else if (active == index && alternativ == " ")
-                    {
-                        Console.Write(" {0,-5} ", "-----");
-                    }
-                    else if (active != index && alternativ == " ")
-                    {
-
-                        Console.Write(" {0,-5} ", "     ");
-                    }
-                    else
-                    {
-                        Console.Write("{0,2}", alternativ);
-                        Console.BackgroundColor = Color;
-                        Console.Write("   ");
-                        Console.BackgroundColor = ConsoleColor.Gray;
-                        Console.Write("  ");
-                    }
-                    Console.ResetColor();
-                }
-                else if (type == "Lawnmower")
-                {
-                    Console.ForegroundColor = ConsoleColor.Black;
-                    Console.BackgroundColor = ConsoleColor.Gray;
-                    ConsoleColor Color = (ConsoleColor)Enum.Parse(typeof(ConsoleColor), layer.GetVehicle(index).Color, true);
-                    if (active == index && alternativ == "0")
-                    {
-                        Console.Write("| ");
-                        Console.BackgroundColor = Color;
-                        Console.Write("   ");
-                        Console.BackgroundColor = ConsoleColor.Gray;
-                        Console.Write(" |");
-                    }
-                    else if (active != index && alternativ == "0")
-                    {
-                        Console.Write("  ");
-                        Console.BackgroundColor = Color;
-                        Console.Write("   ");
-                        Console.BackgroundColor = ConsoleColor.Gray;
-                        Console.Write("  ");
-                    }
-                    else if (active == index && alternativ != " ")
-                    {
-                        Console.Write("|{0,1}", alternativ);
-                        //Console.BackgroundColor = Color;
-                        Console.Write("   ");
-                        Console.BackgroundColor = ConsoleColor.Gray;
-                        Console.Write(" |");
-                    }
-                    else if (active == index && alternativ == " ")
-                    {
-                        Console.Write(" {0,-5} ", "-----");
-                    }
-                    else if (active != index && alternativ == " ")
-                    {
-
-                        Console.Write(" {0,-5} ", "     ");
-                    }
-                    else
-                    {
-                        Console.Write("{0,2}", alternativ);
-                       // Console.BackgroundColor = Color;
-                        Console.Write("   ");
-                        Console.BackgroundColor = ConsoleColor.Gray;
-                        Console.Write("  ");
-                    }
-                    Console.ResetColor();
-                }
-                else if (type == "Bike")
-                {
-                    Console.ForegroundColor = ConsoleColor.Black;
-                    Console.BackgroundColor = ConsoleColor.Gray;
-                    ConsoleColor Color = (ConsoleColor)Enum.Parse(typeof(ConsoleColor), layer.GetVehicle(index).Color, true);
-                    if (active == index && alternativ == "0")
-                    {
-                        Console.Write("|  ");
-                        Console.BackgroundColor = Color;
-                        Console.Write(" ");
-                        Console.BackgroundColor = ConsoleColor.Gray;
-                        Console.Write("  |");
-                    }
-                    else if (active != index && alternativ == "0")
-                    {
-                        Console.Write("   ");
-                        Console.BackgroundColor = Color;
-                        Console.Write(" ");
-                        Console.BackgroundColor = ConsoleColor.Gray;
-                        Console.Write("   ");
-                    }
-                    else if (active == index && alternativ != " ")
-                    {
-                        Console.Write("|{0,1} ", alternativ);
-                        Console.BackgroundColor = Color;
-                        Console.Write(" ");
-                        Console.BackgroundColor = ConsoleColor.Gray;
-                        Console.Write("  |");
-                    }
-                    else if (active == index && alternativ == " ")
-                    {
-                        Console.Write(" {0,-5} ", "-----");
-                    }
-                    else if (active != index && alternativ == " ")
-                    {
-
-                        Console.Write(" {0,-5} ", "     ");
-                    }
-                    else
-                    {
-                        Console.Write("{0,2} ", alternativ);
-                        Console.BackgroundColor = Color;
-                        Console.Write(" ");
-                        Console.BackgroundColor = ConsoleColor.Gray;
-                        Console.Write("   ");
-                    }
-                    Console.ResetColor();
-                }
+                Console.Write("|     |");
+            }
+            else if (active != index && alternativ == "0")
+            {
+                Console.Write("{0,7}", " ");
+            }
+            else if (active == index && alternativ != " ")
+            {
+                Console.Write("|{0,-5}|", alternativ);
+            }
+            else if (active == index && alternativ == " ")
+            {
+                Console.Write(" {0,-5} ", "-----");
             }
             else
             {
-                Console.ForegroundColor = ConsoleColor.Black;
-                Console.BackgroundColor = ConsoleColor.Gray;
-                if (active == index && alternativ == "0")
+                Console.Write(" {0, -5} ", alternativ);
+            }
+            Console.ResetColor();
+
+            if (layer.GetVehicle(index) != null)
+            {
+                ConsoleColor Color = (ConsoleColor)Enum.Parse(typeof(ConsoleColor), layer.GetVehicle(index).Color, true);
+                int left = Console.CursorLeft;
+                int top = Console.CursorTop;
+                string type = layer.GetVehicle(index).type;
+                Console.BackgroundColor = Color;
+                if (type == "Car")
                 {
-                    Console.Write("|     |");
+                    MoveCursorToSpot(index);
+                    Console.Write("   ");
+                    MoveCursorToSpot(index, 1);
+                    Console.Write("   ");
+                    MoveCursorToSpot(index, 2);
+                    Console.Write("   ");
                 }
-                else if (active != index && alternativ == "0")
+                else if(type == "Bike")
                 {
-                    Console.Write("{0,7}", " ");
+                    MoveCursorToSpot(index, 1, 1);
+                    Console.Write(" ");
+                    MoveCursorToSpot(index, 2, 1);
+                    Console.Write(" ");
                 }
-                else if (active == index && alternativ != " ")
+                else if(type == "Quad")
                 {
-                    Console.Write("|{0,-5}|", alternativ);
+                    MoveCursorToSpot(index);        //Top
+                    Console.Write(" ");
+                    MoveCursorToSpot(index, 0, 2);
+                    Console.Write(" ");             
+                    MoveCursorToSpot(index, 1, 1); //MIddle
+                    Console.Write(" ");
+                    MoveCursorToSpot(index, 2, 0); //Bottom
+                    Console.Write(" ");
+                    MoveCursorToSpot(index, 2, 2);
+                    Console.Write(" ");
                 }
-                else if (active == index && alternativ == " ")
+                else if(type == "Lawnmower")
                 {
-                    Console.Write(" {0,-5} ", "-----");
-                }
-                else
-                {
-                    Console.Write(" {0, -5} ", alternativ);
+                    MoveCursorToSpot(index, 0, 1);
+                    Console.Write("  ");
+                    MoveCursorToSpot(index, 1, 1);
+                    Console.Write("  ");
                 }
                 Console.ResetColor();
+                Console.SetCursorPosition(left, top);
             }
+        }
 
-            //string type = layer.GetVehicle(index).type;
-
-            
-
-            
-
-
-            
+        static void MoveCursorToSpot(int index, int top = 0, int left = 0)
+        {
+            int totSpot = layer.GetParkingspots().Length;
+            int rowMax = totSpot / 2;
+            if(index <= rowMax)
+            {
+                top += 6;
+                left += 3 + (8 * (index-1));
+            }
+            else
+            {
+                top += 13;
+                left += 3 + (8 * ((index -1 ) - rowMax));
+            }
+            Console.SetCursorPosition(left, top);
         }
 
         static void Menu(string name, Dictionary<string, Action<string>> meny)
@@ -517,7 +459,6 @@ namespace Garage
                 active = "";
                 foreach (KeyValuePair<string, Action<string>> alternativ in meny)
                 {
-
                     Console.WriteLine();
                     Console.CursorLeft = Indrag;
                     if (index == i)
@@ -529,12 +470,10 @@ namespace Garage
                         Console.WriteLine(" "+alternativ.Key);
                     i += 1;
                 }
-
                 Console.WriteLine("\n" + Msg + "\n");
                 Console.WriteLine("Arrowkeys: " + (char)0x18 + (char)0x19 + (char)0x1A + (char)0x1B);
                 Console.WriteLine("Enter: Interact" + (char)13);
                 Console.WriteLine("Escape: Back");
-
                 if (Navigation(active, name, meny)) { return; }
             }
         }

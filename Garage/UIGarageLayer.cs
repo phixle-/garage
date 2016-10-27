@@ -15,13 +15,13 @@ namespace Garage
         string[] BikeNames = { "Honda 125hk", "Yamaha Wheelie", "Electric Bicycle" };
         string[] LawnmowerNames = { "Huswvarna Rider", "Stiga Tornado", "Traktor McCulloch" };
         string[] QuadNames = { "Loncin 90-B", "Cobra Automatic", "Loncin QuadSnake" };
-        Garage g;
+        Garage<Vehicle> g;
         public Vehicle SelectedVehicle;
         Random rand = new Random();
 
         public UIGarageLayer(int size, bool load = false)
         {
-            g = new Garage(size);
+            g = new Garage<Vehicle>(size);
             SelectedVehicle = new Car(4, 4, "Yellow", 53000, "MiniCoopern", "Car");
             if (load && !File.Exists(Directory.GetCurrentDirectory() + @"\Save.txt"))
             {
@@ -125,6 +125,11 @@ namespace Garage
             return g.ParkingSpots[index -1];
         }
 
+        public List<Vehicle> GetParkedVehicles()
+        {
+            return g.GetParkedVehicles();
+        }
+
         private void AddVehicles()
         {
             for (int i = 0; i < g.ParkingSpots.Length; i += 1)
@@ -155,8 +160,9 @@ namespace Garage
 
                     string color = colors[rand.Next(colors.Length)];
                     double value = rand.Next(100000);
-
-                    g.ParkingSpots[i] = new Vehicle(wheels, color, value, name, type);
+                    Vehicle v = new Vehicle(wheels, color, value, name, type);
+                    v.spot = i + 1;
+                    g.ParkingSpots[i] = v;
                 }
             }
         }

@@ -13,6 +13,7 @@ namespace Garage
         public double Value { get; set; }
         public string Name { get; set; }
         public string type { get; set; }
+        public int spot { get; set; }
 
         public Vehicle(int NrOfWheels, string Color, double Value, string Name, string type)
         {

@@ -6,9 +6,10 @@ using System.Threading.Tasks;
 
 namespace Garage
 {
-    class Garage
+    class Garage<T> : IEnumerable<T> where T : Vehicle
     {
         public Vehicle[] ParkingSpots;
+        public Vehicle[] vehicles;
         Random rand = new Random();
 
         public Garage(int num)
@@ -38,6 +39,7 @@ namespace Garage
             if(freeSlots.Contains(spot))
             {
                 ParkingSpots[spot-1] = v;
+                v.spot = spot;
                 return true;
             }
             return false;
@@ -69,5 +71,17 @@ namespace Garage
             return vehicles;
         }
 
+        public IEnumerator<T> GetEnumerator()
+        {
+            foreach (T item in ParkingSpots)
+            {
+                yield return item;
+            }
+        }
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

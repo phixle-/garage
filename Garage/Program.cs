@@ -8,18 +8,18 @@ namespace Garage
 {
     class Program
     {
-        static UIGarageLayer layer = new UIGarageLayer(8);
+        static int spotAmount = 8;
+        static UIGarageLayer layer = new UIGarageLayer(spotAmount);
         static int index = 0;
         static int Indrag = 2;
         static string Msg = "";
-        static string searchQuery = "";
         static Dictionary<string, Action<string>> MainMenyDictionary = new Dictionary<string, Action<string>>();
         static List<Vehicle> searchResult = new List<Vehicle>();
 
         static void Main(string[] args)
         {
             
-            Console.SetWindowSize(Console.WindowWidth, 40);
+            Console.SetWindowSize(42 + (spotAmount * 4), 40);
             AddToDictionary();
             while(true)
                 Menu("Main menu", MainMenyDictionary);
@@ -28,7 +28,7 @@ namespace Garage
         static void AddToDictionary()
         {
             MainMenyDictionary.Add("Show garage", ShowGarage);
-            MainMenyDictionary.Add("Exit application", Exit);
+            MainMenyDictionary.Add("Exit application", layer.Exit);
             MainMenyDictionary.Add("Save", Save);
             MainMenyDictionary.Add("Load", Load);
         }
@@ -49,10 +49,7 @@ namespace Garage
                 Msg = "Loading failure!";
         }
 
-        static void Exit(string name)
-        {
-            Environment.Exit(0);
-        }
+        
 
         static void ClearLine()
         {
@@ -70,27 +67,21 @@ namespace Garage
                 Console.SetCursorPosition(0, 0);
                 Console.WriteLine(name);
                 Console.WriteLine("Parked vehicles:");
+                ClearLine();
                 int left = Console.CursorLeft + l*4;
                 int top = Console.CursorTop;
                 if(left > Console.WindowWidth/2)
-                {
                     left = 1;
-                }
                 
-                //ClearLine();
-                //Console.SetCursorPosition(0, top);
                 int tempL = Console.CursorLeft;
                 int tempT = Console.CursorTop;
-                ClearLine();
-                Console.SetCursorPosition(left, top);
-                Console.WriteLine("Search: " + searchQuery);
-                ShowSearchResult(searchQuery);
-                Console.WriteLine();
+                ClearLine(); 
+                string search = layer.searchQuery;
+                //Console.SetCursorPosition(left-1, top);
+                
+                ShowSearchResult(search);
                 DrawLayout(pos);
                 VehicleInfo(pos);
-                //Console.SetCursorPosition(left, top);
-
-
                 
                 ConsoleKeyInfo keyInfo = Console.ReadKey();
                 if (keyInfo.Key == ConsoleKey.UpArrow || keyInfo.Key == ConsoleKey.DownArrow)
@@ -151,49 +142,22 @@ namespace Garage
                     }
                     Console.ReadKey();
                 }
-                else
-                {
-                    Search(keyInfo);
-                    
-                }
-
-                
-            }
-        }
-
-        static void Search(ConsoleKeyInfo key)
-        {
-            if(key.Key == ConsoleKey.Backspace)
-            {
-                if(searchQuery.Length > 0)
-                {
-                    searchQuery = searchQuery.Substring(0, searchQuery.Length - 1);
-                }
-            }
-            else
-            {
-                searchQuery += key.KeyChar.ToString();
+                else if (keyInfo.Key == ConsoleKey.Backspace || char.IsLetter(keyInfo.KeyChar))
+                    layer.Search(keyInfo);
             }
         }
 
         static void ShowSearchResult(string sq)
         {
-            //Console.Clear();
             int OriginalLeft = Console.CursorLeft;
             int OriginalTop = Console.CursorTop;
             int l = layer.GetParkingspots().Length;
-            int left = Console.CursorLeft + l * 4 + 2;
+            int left = Console.WindowWidth - 40;
             int top = 5;
-            if (left > Console.WindowWidth / 2)
-            {
-                left = 1;
-                top = 40;
-            }
             searchResult.Clear();
             if(sq.Length > 0)
             {
                 IEnumerable<Vehicle> vQ = layer.GetParkedVehicles().Where(q => q.Name.StartsWith(sq)).Select(q => q).OrderBy(q => q.type);
-                
                 foreach (Vehicle v in vQ)
                 {
                     if (!searchResult.Contains(v))
@@ -206,68 +170,58 @@ namespace Garage
                         searchResult.Add(v);
                 }
             }
-
             for (int q = 0; q < 30; q++)
             {
                 Console.SetCursorPosition(left, top+q);
                 Console.WriteLine("                                         ");
             }
-
             int limit = searchResult.Count();
-
             if (limit > 4)
                 limit = 4;
-
+            Console.SetCursorPosition(left, top - 2);
+            Console.WriteLine("                                             ");
+            Console.SetCursorPosition(left, top - 1);
+            Console.WriteLine("                                             ");
+            Console.SetCursorPosition(left, top - 2);
+            if (sq.Length > 0)
+                Console.WriteLine("Search: " + sq);
             for (int i = 0; i < limit; i+=1  )
             {
                 if(searchResult[i] != null)
                 {
-                    
                     Console.MoveBufferArea(0, 0, Console.WindowWidth, Console.WindowHeight, 0, 0);
                     Vehicle v = searchResult[i];
                     string spot = v.spot.ToString();
-                    if (spot == "0")
+                    if (v.spot == 0)
                         spot = "In use";
+                    Console.SetCursorPosition(left, top-1);
+                    for (int z = 0; z < 30; z++)
+                    {
+                        Console.Write("-");
+                    }
                     Console.SetCursorPosition(left, top);
-                    Console.WriteLine("Parkingspot: {0}", spot);
+                    Console.WriteLine("{0, -18}{1}", "Parkingspot:", spot);
                     Console.SetCursorPosition(left, top + 1);
-                    Console.WriteLine("Name of Vehicle: {0}", v.Name);
+                    Console.WriteLine("{0, -18}{1}", "Name of Vehicle:", v.Name);
                     Console.SetCursorPosition(left, top + 2);
-                    Console.WriteLine("Vehicle: {0}", v.type);
+                    Console.WriteLine("{0, -18}{1}", "Vehicle:", v.type);
                     Console.SetCursorPosition(left, top + 3);
-                    Console.WriteLine("Color: {0}", v.Color);
+                    Console.WriteLine("{0, -18}{1}", "Color:", v.Color);
                     Console.SetCursorPosition(left, top + 4);
-                    Console.WriteLine("Value: {0}", v.Value);
+                    Console.WriteLine("{0, -18}{1}", "Value:", v.Value);
                     Console.SetCursorPosition(left, top + 5);
-                    Console.WriteLine("Nr of wheels: {0}", v.NrOfWheels);
+                    Console.WriteLine("{0, -18}{1}", "Nr of wheels:", v.NrOfWheels);
                     Console.SetCursorPosition(left, top);
-
                     if(top < Console.BufferHeight-8)
                         top += 8;
                 }
-                
             }
             Console.SetCursorPosition(OriginalLeft, OriginalTop);
         }
 
-        static void OldDrawLayout(int active)
-        {
-            Console.WriteLine("#################");
-            Console.Write("#"); ParkLight(" ", 1, active); Console.Write("#"); ParkLight(" ", 2, active); Console.Write("#"); ParkLight(" ", 3, active); Console.Write("#"); ParkLight(" ", 4, active); Console.WriteLine("#");
-            Console.Write("#"); ParkLight("1", 1, active); Console.Write("#"); ParkLight("2", 2, active); Console.Write("#"); ParkLight("3", 3, active); Console.Write("#"); ParkLight("4", 4, active); Console.WriteLine("#");
-            Console.Write("#"); ParkLight(" ", 1, active); Console.Write("#"); ParkLight(" ", 2, active); Console.Write("#"); ParkLight(" ", 3, active); Console.Write("#"); ParkLight(" ", 4, active); Console.WriteLine("#");
-            Console.WriteLine("#               #");
-            Console.WriteLine("#               #");
-            Console.WriteLine("#               #");
-            Console.Write("#"); ParkLight(" ", 5, active); Console.Write("#"); ParkLight(" ", 6, active); Console.Write("#"); ParkLight(" ", 7, active); Console.Write("#"); ParkLight(" ", 8, active); Console.WriteLine("#");
-            Console.Write("#"); ParkLight("5", 5, active); Console.Write("#"); ParkLight("6", 6, active); Console.Write("#"); ParkLight("7", 7, active); Console.Write("#"); ParkLight("8", 8, active); Console.WriteLine("#");
-            Console.Write("#"); ParkLight(" ", 5, active); Console.Write("#"); ParkLight(" ", 6, active); Console.Write("#"); ParkLight(" ", 7, active); Console.Write("#"); ParkLight(" ", 8, active); Console.WriteLine("#");
-            Console.WriteLine("#################");
-        }
-
         static void DrawLayout(int active)
         {
-            
+            Console.SetCursorPosition(0, Console.CursorTop);
             drawTopMidBottom();
             int len = layer.GetParkingspots().Length;
             if (len % 2 != 0)
@@ -336,19 +290,19 @@ namespace Garage
             int x = Console.CursorLeft;
             int y = Console.CursorTop;
 
-            /*for (int i = 0; i < 16; i+=1)
-                Console.WriteLine(new string(' ', Console.WindowWidth));*/
+            for (int i = 0; i < 16; i+=1)
+                Console.WriteLine(new string(' ', spotAmount * 4));
 
                 Console.SetCursorPosition(x, y);
 
             if(layer.GetVehicle(index) != null)
             {
                 Vehicle v = layer.GetVehicle(index);
-                Console.WriteLine("Parkingspot: {0}\nVehicle: {1}\nName of Vehicle: {2}\nColor: {3}\nValue: {4}\nNr of wheels: {5}", index + "          ", v.type + "          ", v.Name + "                 ", v.Color + "          ", v.Value + "          ", v.NrOfWheels + "          ");
+                Console.WriteLine(" {0, -20}{1}\n {2, -20}{3}\n {4, -20}{5}\n {6, -20}{7}\n {8, -20}{9}\n {10, -20}{11}", "Parkingspot:", index, "Vehicle:", v.type, "Name of Vehicle:", v.Name, "Color:", v.Color, "Value:", v.Value, "Nr of wheels:", v.NrOfWheels);
             }
             else
             {
-                Console.WriteLine("Parkingspot: {0}\nVehicle: {1}\nName of Vehicle: {2}\nColor: {3}\nValue: {4}\nNr of wheels: {5}", index + "          ", "N/A                 ", "N/A                 ", "N/A                 ", "N/A                 ", "N/A                 ");
+                Console.WriteLine(" {0, -20}{1}\n {2, -20}{3}\n {4, -20}{5}\n {6, -20}{7}\n {8, -20}{9}\n {10, -20}{11}", "Parkingspot:", index, "Vehicle:", "N/A", "Name of Vehicle:", "N/A", "Color:", "N/A", "Value:", "N/A", "Nr of wheels:", "N/A");
             }
         }
 
@@ -445,6 +399,17 @@ namespace Garage
 
         static void Menu(string name, Dictionary<string, Action<string>> meny)
         {
+           /* Garage<Bike> gar = new Garage<Bike>(21);
+            Bike bike = new Bike(0, 5, "g", 23, "Tyep", "Vehicle");
+            gar.Park(2, bike);
+            gar.GetParkedVehicles()[0].
+            Vehicle ve = new Vehicle(5, "g", 23, "Tyep", "Vehicle");
+            
+            ve = bike;*/
+
+
+
+
             name = name.ToUpper();
             if (index >= meny.Count()) { index = 0; }
             Console.Clear();

@@ -15,9 +15,13 @@ namespace Garage
         string[] BikeNames = { "Honda 125hk", "Yamaha Wheelie", "Electric Bicycle" };
         string[] LawnmowerNames = { "Huswvarna Rider", "Stiga Tornado", "Traktor McCulloch" };
         string[] QuadNames = { "Loncin 90-B", "Cobra Automatic", "Loncin QuadSnake" };
-        Garage<Vehicle> g;
+        
         public Vehicle SelectedVehicle;
+        public string searchQuery = "";
+
         Random rand = new Random();
+        Garage<Vehicle> g;
+        
 
         public UIGarageLayer(int size, bool load = false)
         {
@@ -33,9 +37,24 @@ namespace Garage
             }
         }
 
+        public void CreateGarage(int spots)
+        {
+            g = new Garage<Vehicle>(spots);
+        }
+
+        public void Exit(string name)
+        {
+            Environment.Exit(0);
+        }
+
         public Vehicle[] GetParkingspots()
         {
-            return g.ParkingSpots;
+            List<Vehicle> spots = new List<Vehicle>();
+            foreach (Vehicle v in g)
+            {
+                spots.Add(v);
+            }
+            return spots.ToArray();
         }
 
         public bool Save(string tjoller)
@@ -78,6 +97,7 @@ namespace Garage
                 StreamReader file = new StreamReader(Directory.GetCurrentDirectory() + @"\Save.txt");
                 List<Vehicle> vehicles = new List<Vehicle>();
                 int index = 0;
+
                 while(file.Peek() >= 0)
                 {
                     string line = file.ReadLine();
@@ -99,6 +119,8 @@ namespace Garage
                     else
                         if (index != 0)
                             vehicles.Add(null);
+                        else if (index == 0)
+                            SelectedVehicle = null;
                     
                     index += 1;
                 }
@@ -115,9 +137,19 @@ namespace Garage
             
         }
 
-        public void Search()
+        public void Search(ConsoleKeyInfo key)
         {
-
+            if (key.Key == ConsoleKey.Backspace)
+            {
+                if (searchQuery.Length > 0)
+                {
+                    searchQuery = searchQuery.Substring(0, searchQuery.Length - 1);
+                }
+            }
+            else
+            {
+                searchQuery += key.KeyChar.ToString();
+            }
         }
 
         public Vehicle GetVehicle(int index)

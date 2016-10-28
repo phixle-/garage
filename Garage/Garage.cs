@@ -16,7 +16,7 @@ namespace Garage
         {
             if (num % 2 != 0)
                 num -= 1;
-            this.ParkingSpots = new Vehicle[num];
+            this.ParkingSpots = new T[num];
         }
 
         public List<int> GetFreeSpots()

@@ -7,46 +7,77 @@ using System.IO;
 
 namespace Garage
 {
-    class UIGarageLayer
+    class GarageHandler
     {
+        //colors innehåller olika färger
         string[] colors = { "Blue", "Yellow", "Green", "Red", "Cyan", "Magenta", "DarkGreen", "DarkBlue", "DarkYellow", "DarkCyan", "DarkCyan" };
+        //types består av olika fordonstyper
         string[] types = { "Car", "Bike", "Lawnmower", "Quad" };
+        //CarNames innehåller olika bilnamn
         string[] CarNames = { "Mini Cooper", "Volvo 240", "Renault Scénica", "Opel Vivaro" };
+        //BikeNames innehåler olika motor/cykelnamn
         string[] BikeNames = { "Honda 125hk", "Yamaha Wheelie", "Electric Bicycle" };
+        //LawnmowerNames består av olika gräsklipparnamn
         string[] LawnmowerNames = { "Huswvarna Rider", "Stiga Tornado", "Traktor McCulloch" };
+        //QuadNames innehåller olika fyrhjulingsnamn
         string[] QuadNames = { "Loncin 90-B", "Cobra Automatic", "Loncin QuadSnake" };
         
+        //Fordonet användaren kör just nu
         public Vehicle SelectedVehicle;
+        //Sökfrasen som används för att söka bland de parkerade fordonen
         public string searchQuery = "";
 
-        Random rand = new Random();
+        //Variabel för att hålla det aktiva garaget
         Garage<Vehicle> g;
         
-
-        public UIGarageLayer(int size, bool load = false)
+        /// <summary>
+        /// Konstruktor som tar in antal parkeringar och om vi ska ladda från en sparfil
+        /// </summary>
+        /// <param name="size"></param>
+        /// <param name="load"></param>
+        public GarageHandler(int size, bool load = false)
         {
-            g = new Garage<Vehicle>(size);
-            SelectedVehicle = new Car(4, 4, "Yellow", 53000, "MiniCoopern", "Car");
+            //Skapa nytt garage med specificerad storlek
+            g = CreateGarage(size);
+            //Skapa ny bil åt användaren
+            SelectedVehicle = new Car(4, 4, "Yellow", 53000, "Mini Coopern", "Car");
+
+            //Kolla om vi ska ladda sparning från en fil och i så fall kolla om filen i fråga existerar.
             if (load && !File.Exists(Directory.GetCurrentDirectory() + @"\Save.txt"))
             {
+                //Ladda information
                 Load("loading");
             }
             else
             {
+                //Generera fordon
                 AddVehicles();
             }
         }
 
-        public void CreateGarage(int spots)
+        /// <summary>
+        /// Returnerar ett nyskapat garage med specificerad storlek
+        /// </summary>
+        /// <param name="spots"></param>
+        /// <returns></returns>
+        public Garage<Vehicle> CreateGarage(int spots)
         {
-            g = new Garage<Vehicle>(spots);
+            return new Garage<Vehicle>(spots);
         }
 
+        /// <summary>
+        /// Stänger ned programmet
+        /// </summary>
+        /// <param name="name"></param>
         public void Exit(string name)
         {
             Environment.Exit(0);
         }
 
+        /// <summary>
+        /// Returnera en array av alla parkeringar
+        /// </summary>
+        /// <returns></returns>
         public Vehicle[] GetParkingspots()
         {
             List<Vehicle> spots = new List<Vehicle>();
@@ -57,6 +88,11 @@ namespace Garage
             return spots.ToArray();
         }
 
+        /// <summary>
+        /// Hämtar alla parkeringar och formaterar varje rad som sedan skrivs in i Save.txt. Returnerar true om det gick att spara, false om det inte gick
+        /// </summary>
+        /// <param name="tjoller"></param>
+        /// <returns></returns>
         public bool Save(string tjoller)
         {
             try
@@ -70,7 +106,6 @@ namespace Garage
                 for (int i = 0; i < vehicles.Length; i += 1)
                 {
                     Vehicle v = vehicles[i];
-
                     if (v != null)
                         lines += v.type + "," + v.Name + "," + v.Color + "," + v.Value + "," + v.NrOfWheels + "\r\n";
                     else
@@ -79,9 +114,7 @@ namespace Garage
                 StreamWriter file = new StreamWriter(Directory.GetCurrentDirectory() + @"\Save.txt");
                 lines.TrimEnd();
                 file.WriteLine(lines);
-
                 file.Close();
-
                 return true;
             }
             catch
@@ -90,6 +123,11 @@ namespace Garage
             }
         }
 
+        /// <summary>
+        /// Returnerar true om det gick att ladda, false om det inte gick. Load kollar varje rad i Save.txt och skapar nya fordon av informationen i Save.txt 
+        /// </summary>
+        /// <param name="tjoller"></param>
+        /// <returns></returns>
         public bool Load(string tjoller)
         {
             if (File.Exists(Directory.GetCurrentDirectory() + @"\Save.txt"))
@@ -137,6 +175,10 @@ namespace Garage
             
         }
 
+        /// <summary>
+        /// Tar emot en tangent. Om det är en backspace tar vi bort sista bokstaven i searchQuery. Om det inte var backspace är det en bokstav och i det fallet läggs bokstaven till på slutet av searchQuery
+        /// </summary>
+        /// <param name="key"></param>
         public void Search(ConsoleKeyInfo key)
         {
             if (key.Key == ConsoleKey.Backspace)
@@ -152,46 +194,63 @@ namespace Garage
             }
         }
 
+        /// <summary>
+        /// Returnerar fordonet för specificerad parkering
+        /// </summary>
+        /// <param name="index"></param>
+        /// <returns></returns>
         public Vehicle GetVehicle(int index)
         {
             return g.ParkingSpots[index -1];
         }
 
+        /// <summary>
+        /// Returnerar en lista av alla parkerade fordon
+        /// </summary>
+        /// <returns></returns>
         public List<Vehicle> GetParkedVehicles()
         {
             return g.GetParkedVehicles();
         }
 
+        public void CreateVehicle(int NrOfWheels, string Color, double Value, string Name, string type, int NrOfSeats, int HP, int Gears, bool Collector)
+        {
+            g.CreateVehicle(NrOfWheels, Color, Value, Name, type, NrOfSeats, HP, Gears, Collector);
+        }
+
+        /// <summary>
+        /// Generar slumpmässigt nya fordon baserat på hur många parkeringar som existerar
+        /// </summary>
         private void AddVehicles()
         {
             for (int i = 0; i < g.ParkingSpots.Length; i += 1)
             {
-                if(rand.Next(2) == 1)
+                if(g.rand.Next(2) == 1)
                 {
-                    string type = types[rand.Next(types.Length)];
+                    string type = types[g.rand.Next(types.Length)];
                     int wheels = 4;
                     string name = "";
 
                     if (type == "Car")
                     {
-                        name = CarNames[rand.Next(CarNames.Length)];
+                        name = CarNames[g.rand.Next(CarNames.Length)];
                     }
                     else if (type == "Bike")
                     {
                         wheels = 2;
-                        name = BikeNames[rand.Next(BikeNames.Length)];
+                        name = BikeNames[g.rand.Next(BikeNames.Length)];
                     }
                     else if (type == "Lawnmower")
                     {
-                        name = LawnmowerNames[rand.Next(LawnmowerNames.Length)];
+                        name = LawnmowerNames[g.rand.Next(LawnmowerNames.Length)];
                     }
                     else if (type == "Quad")
                     {
-                        name = QuadNames[rand.Next(QuadNames.Length)];
+                        name = QuadNames[g.rand.Next(QuadNames.Length)];
                     }
 
-                    string color = colors[rand.Next(colors.Length)];
-                    double value = rand.Next(100000);
+                    string color = colors[g.rand.Next(colors.Length)];
+                    double value = g.rand.Next(100000);
                     Vehicle v = new Vehicle(wheels, color, value, name, type);
                     v.spot = i + 1;
                     g.ParkingSpots[i] = v;
@@ -199,11 +258,21 @@ namespace Garage
             }
         }
 
+        /// <summary>
+        /// Park kallas från UIn som sedan kallar på Park i Garage
+        /// </summary>
+        /// <param name="s"></param>
+        /// <param name="v"></param>
         public void Park(int s, Vehicle v)
         {
             g.Park(s, v);
         }
 
+        /// <summary>
+        /// Unpark kallas från UIn som sedan kallar på Unpark i Garage
+        /// </summary>
+        /// <param name="s"></param>
+        /// <returns></returns>
         public Vehicle Unpark(int s)
         {
             return g.Unpark(s);
